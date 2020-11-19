@@ -150,6 +150,17 @@ int riotboot_flashwrite_putbytes(riotboot_flashwrite_t *state,
     return 0;
 }
 
+int riotboot_flashwrite_revert(int slot)
+{
+    riotboot_flashwrite_t flash;
+
+    riotboot_flashwrite_init(&flash , slot);
+
+    uint8_t zeros[]={0,0,0,0};
+
+    return riotboot_flashwrite_finish_raw(&flash, zeros, RIOTBOOT_FLASHWRITE_SKIPLEN);
+}
+
 int riotboot_flashwrite_finish_raw(riotboot_flashwrite_t *state,
                                const uint8_t *bytes, size_t len)
 {
@@ -162,6 +173,7 @@ int riotboot_flashwrite_finish_raw(riotboot_flashwrite_t *state,
 #if CONFIG_RIOTBOOT_FLASHWRITE_RAW
     memcpy(state->firstblock_buf, bytes, len);
     flashpage_write(slot_start, state->firstblock_buf, RIOTBOOT_FLASHPAGE_BUFFER_SIZE);
+    res = 0;
 #else
     uint8_t *firstpage;
 
