@@ -5,10 +5,7 @@
 extern "C" {
 #endif
 
-#include "can/device.h"
 #include "candev_samd5x.h"
-
-#include "board.h"
 
 /** Default SAMD5x CAN devices config */
 static const can_conf_t candev_conf[] = {

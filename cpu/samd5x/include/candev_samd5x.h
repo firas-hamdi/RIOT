@@ -7,6 +7,7 @@ extern "C" {
 
 #include "can/candev.h"
 #include "periph/gpio.h"
+#include "can/device.h"
 
 #ifndef CANDEV_SAMD5X_DEFAULT_BITRATE
 /** Default bitrate */

@@ -19,14 +19,8 @@
 
 #include <assert.h>
 #include <string.h>
-#include <errno.h>
-#include <limits.h>
-#include <cpu_conf.h>
 
 #include "candev_samd5x.h"
-#include "periph/can.h"
-#include "can/device.h"
-#include "periph_cpu.h"
 
 #define ENABLE_DEBUG 0
 #include "debug.h"
