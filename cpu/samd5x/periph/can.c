@@ -20,7 +20,9 @@
 #include <assert.h>
 #include <string.h>
 
-#include "candev_samd5x.h"
+#include "periph/can.h"
+#include "periph/gpio.h"
+#include "can/device.h"
 
 #define ENABLE_DEBUG 0
 #include "debug.h"
@@ -559,6 +561,7 @@ static void _isr(candev_t *candev)
     }
 }
 
+#ifdef ISR_CAN1
 void ISR_CAN1(void)
 {
     DEBUG_PUTS("ISR CAN1");
@@ -568,7 +571,9 @@ void ISR_CAN1(void)
     }
 
 }
+#endif
 
+#ifdef ISR_CAN0
 void ISR_CAN0(void)
 {
     DEBUG_PUTS("ISR CAN0");
@@ -577,3 +582,4 @@ void ISR_CAN0(void)
         _can->candev.event_callback(&(_can->candev), CANDEV_EVENT_ISR, NULL);
     }
 }
+#endif

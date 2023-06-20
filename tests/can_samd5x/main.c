@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 
-#include "can_params.h"
+#include "periph/gpio.h"
 #include "periph/can.h"
 
 static can_t can_samd5x;
@@ -86,7 +86,7 @@ int main(void)
     puts("candev test application\n");
 
     gpio_init(GPIO_PIN(PC, 13), GPIO_IN);
-    can_init(&can_samd5x, &candev_conf[1]);
+    can_init(&can_samd5x, &candev_conf[0]);
 
     candev = &(can_samd5x.candev);
     candev->event_callback = _can_event_callback;

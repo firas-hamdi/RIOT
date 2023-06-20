@@ -6,8 +6,6 @@ extern "C" {
 #endif
 
 #include "can/candev.h"
-#include "periph/gpio.h"
-#include "can/device.h"
 
 #ifndef CANDEV_SAMD5X_DEFAULT_BITRATE
 /** Default bitrate */
@@ -112,10 +110,6 @@ typedef struct {
     msg_ram_conf_t msg_ram_conf;
 } can_t;
 #define HAVE_CAN_T
-
-/* Interrupt service routine functions */
-#define ISR_CAN0	isr_can0
-#define ISR_CAN1	isr_can1
 
 /**
  * @brief   Set the pins of the CAN physical transceiver

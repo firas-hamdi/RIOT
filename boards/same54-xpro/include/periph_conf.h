@@ -107,6 +107,29 @@ static const tc32_conf_t timer_config[] = {
 /** @} */
 
 /**
+ * @name CAN configuration
+ * @{
+ */
+static const can_conf_t candev_conf[] = {
+    {
+        .can = CAN1,
+        .rx_pin = GPIO_PIN(PB, 13),
+        .tx_pin = GPIO_PIN(PB, 12),
+        .mux = GPIO_MUX_H,
+        .tdc_ctrl = false,
+        .dar_ctrl = false,
+        .tx_fifo_queue_ctrl = false,
+        .global_filter_cfg = CAN_REJECT,
+    }
+};
+
+/* CAN 1 configuration */
+#define ISR_CAN1    isr_can1
+
+#define CAN_NUMOF         ARRAY_SIZE(candev_conf)
+/** @} */
+
+/**
  * @name UART configuration
  * @{
  */
