@@ -55,6 +55,24 @@ extern "C" {
 #define CANDEV_SAMD5X_MAX_TX_BUFFER			32
 #define CANDEV_SAMD5X_MSG_RAM_MAX_SIZE		448
 
+typedef enum {
+    CANDEV_SAMD5X_FILTER_TYPE_RANGE = 0x00,
+    CANDEV_SAMD5X_FILTER_TYPE_DUAL,
+    CANDEV_SAMD5X_FILTER_TYPE_CLASSIC,
+    CANDEV_SAMD5X_FILTER_TYPE_EXT_RANGE
+} candev_samd5x_filter_type_t;
+
+typedef enum {
+    CANDEV_SAMD5X_FILTER_CONF_DISABLE = 0x00,
+    CANDEV_SAMD5X_FILTER_CONF_RX_FIFO_0,
+    CANDEV_SAMD5X_FILTER_CONF_RX_FIFO_1,
+    CANDEV_SAMD5X_FILTER_CONF_RX_REJECT,
+    CANDEV_SAMD5X_FILTER_CONF_RX_PRIO,
+    CANDEV_SAMD5X_FILTER_CONF_RX_PRIO_FIFO_0,
+    CANDEV_SAMD5X_FILTER_CONF_RX_PRIO_FIFO_1,
+    CANDEV_SAMD5X_FILTER_CONF_RX_STRXBUF
+} candev_samd5x_filter_conf_t;
+
 /**
  * @brief Global configuration of the CAN filters
  */
@@ -71,9 +89,7 @@ typedef struct {
     Can *can;                                       /**< CAN device handler */
     gpio_t rx_pin;                                  /**< CAN Rx pin */
     gpio_t tx_pin;                                  /**< CAN Tx pin */
-    gpio_mux_t mux;
     bool tdc_ctrl;									/**< Enable/Disable Transceiver Delay Compensation */
-    bool dar_ctrl;									/**< Enable/Disable Automatic Retransmission */
     bool tx_fifo_queue_ctrl;						/**< False to use Tx FIFO operation
                                                         True to use Tx Queue operation */
     can_non_matching_filter_t global_filter_cfg;	/**< Configure how to treat the messages that do
@@ -85,7 +101,7 @@ typedef struct {
  * @brief CAN message RAM accessible to the CAN controller
  */
 typedef struct {
-	/** Standard filters space in the CAN message RAM */
+    /** Standard filters space in the CAN message RAM */
     CanMramSidfe std_filter[CANDEV_SAMD5X_DEFAULT_STD_FILTER_NUM];
     /** Extended filters space in the CAN message RAM */
     CanMramXifde ext_filter[CANDEV_SAMD5X_DEFAULT_EXT_FILTER_NUM];
@@ -105,8 +121,11 @@ typedef struct {
  * @brief CAN device descriptor
  */
 typedef struct {
+    /** Structure to hold driver state */
     candev_t candev;
+    /** CAN device configuration descriptor */
     const can_conf_t *conf;
+    /** CAN message RAM accessible to the CAN controller */
     msg_ram_conf_t msg_ram_conf;
 } can_t;
 #define HAVE_CAN_T
@@ -151,4 +170,4 @@ void candev_samd5x_enter_sleep_mode(candev_t *candev);
  */
 void candev_samd5x_exit_sleep_mode(candev_t *candev);
 
-#endif
+#endif /* CANDEV_SAMD5X_H */

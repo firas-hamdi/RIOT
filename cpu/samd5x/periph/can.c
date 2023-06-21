@@ -183,8 +183,17 @@ void candev_samd5x_set_pins(can_t *dev)
     gpio_init(dev->conf->tx_pin, GPIO_OUT);
     gpio_init(dev->conf->rx_pin, GPIO_IN);
 
-    gpio_init_mux(dev->conf->tx_pin, dev->conf->mux);
-    gpio_init_mux(dev->conf->rx_pin, dev->conf->mux);
+    if (dev->conf->can == CAN0) {
+        gpio_init_mux(dev->conf->tx_pin, GPIO_MUX_I);
+        gpio_init_mux(dev->conf->rx_pin, GPIO_MUX_I);
+    }
+    else if (dev->conf->can == CAN1) {
+        gpio_init_mux(dev->conf->tx_pin, GPIO_MUX_H);
+        gpio_init_mux(dev->conf->rx_pin, GPIO_MUX_H);
+    }
+    else {
+        DEBUG_PUTS("Unsupported can channel");
+    }
 }
 
 void candev_samd5x_enter_sleep_mode(candev_t *candev)
