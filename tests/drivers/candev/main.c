@@ -33,6 +33,10 @@
 
 #include "periph/can.h"
 #include "can_params.h"
+#if defined(MCU_SAMD5X)
+#include "periph_conf.h"
+#include "periph/gpio.h"
+#endif
 
 static can_t periph_dev;
 
@@ -163,6 +167,14 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
             DEBUG("0x%X ", frame->data[i]);
         }
         DEBUG_PUTS("");
+        struct can_frame can_answer = {
+            .can_id = 0x81234567,
+            .can_dlc = 1,
+            .data = {
+                0xAA
+            }
+        };
+        candev->driver->send(candev, &can_answer);
 
         /* Store in buffer until user requests the data */
         isrpipe_write(&rxbuf, (uint8_t *)&(frame->can_id), sizeof(frame->can_id));
@@ -196,8 +208,11 @@ int main(void)
     isrpipe_init(&rxbuf, (uint8_t *)rx_ringbuf, sizeof(rx_ringbuf));
 #if IS_USED(MODULE_PERIPH_CAN)
     puts("Initializing CAN periph device");
-    can_init(&periph_dev, &(candev_conf[0]));    /* vcan0 on native */
-    candev = (candev_t *)&periph_dev;
+    can_init(&periph_dev, &(candev_conf[0]));
+    candev = &(periph_dev.candev);
+#if defined(MCU_SAMD5X)
+    gpio_init(GPIO_PIN(PC, 13), GPIO_IN);
+#endif
 #elif  defined(MODULE_MCP2515)
     puts("Initializing MCP2515");
     candev_mcp2515_init(&mcp2515_dev, &candev_mcp2515_conf[0]);
@@ -221,34 +236,37 @@ if (IS_ACTIVE(CONFIG_USE_LOOPBACK_MODE)) {
     candev->driver->set(candev, CANOPT_STATE, &mode, sizeof(mode));
 }
 
+#if defined(MODULE_MCP2515)
     if (IS_ACTIVE(MCP2515_RECV_FILTER_EN)) {
         /* CAN filters examples */
         struct can_filter filter[4];
         filter[0].can_mask = 0x7FF;
         filter[0].can_id = 0x001;
-#if defined(MODULE_MCP2515)
+#if !defined(__linux__)
         filter[0].target_mailbox = 0;   /* messages with CAN ID 0x001 will be received in mailbox 0 */
 #endif
         filter[1].can_mask = 0x7FF;
         filter[1].can_id = 0x002;
-#if defined(MODULE_MCP2515)
+#if !defined(__linux__)
         filter[1].target_mailbox = 1;   /* messages with CAN ID 0x002 will be received in mailbox 1 */
 #endif
         filter[2].can_mask = 0x7FF;
         filter[2].can_id = 0x003;
-#if defined(MODULE_MCP2515)
+#if !defined(__linux__)
         filter[2].target_mailbox = 0;   /* messages with CAN ID 0x003 will be received in mailbox 0 */
 #endif
         filter[3].can_mask = 0x7FF;
         filter[3].can_id = 0x004;
-#if defined(MODULE_MCP2515)
+#if !defined(__linux__)
         filter[3].target_mailbox = 0;   /* this filter won't be applied. Reason is no space found in the first mailbox as it supports only two filters */
 #endif
         for (uint8_t i = 0; i < 4; i++) {
             candev->driver->set_filter(candev, &filter[i]);
         }
         /* All other messages won't be received */
+#if defined(MODULE_MCP2515)
     }
+#endif
 
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
