@@ -33,7 +33,8 @@
 
 #include "periph/can.h"
 #include "can_params.h"
-#if defined(MCU_SAMD5X)
+#if defined(BOARD_SAME54_XPRO)
+#include "board.h"
 #include "periph_conf.h"
 #include "periph/gpio.h"
 #endif
@@ -210,10 +211,10 @@ int main(void)
     puts("Initializing CAN periph device");
     can_init(&periph_dev, &(candev_conf[0]));
     candev = &(periph_dev.candev);
-#if defined(MCU_SAMD5X)
-    gpio_init(GPIO_PIN(PC, 13), GPIO_IN);
+#if defined(BOARD_SAME54_XPRO)
+    gpio_init(AT6561_STBY_PIN, AT6561_STBY_MODE);
 #endif
-#elif  defined(MODULE_MCP2515)
+#elif defined(MODULE_MCP2515)
     puts("Initializing MCP2515");
     candev_mcp2515_init(&mcp2515_dev, &candev_mcp2515_conf[0]);
     candev = (candev_t *)&mcp2515_dev;
@@ -236,29 +237,34 @@ if (IS_ACTIVE(CONFIG_USE_LOOPBACK_MODE)) {
     candev->driver->set(candev, CANOPT_STATE, &mode, sizeof(mode));
 }
 
+/* Depending from the CAN controller used, this test example will provide different results.
+For MCP2515 standalone CAN controller, the last filter won't be applied as the first reception mailbox supports up to two filters
+For SAMD5x/E5x CAN controller, and with keeping the default parameters in candev_samd5x.h, the last filter won't be applied as the CAN controller supports up to 3 standard filters
+For SAMD5x/E5x CAN controller, if you increase the maximum capacity of the standard filters (as mentioned in Makefile.board.dep), the last filter can be applied correctly. */
 #if defined(MODULE_MCP2515)
     if (IS_ACTIVE(MCP2515_RECV_FILTER_EN)) {
+#endif
         /* CAN filters examples */
         struct can_filter filter[4];
         filter[0].can_mask = 0x7FF;
         filter[0].can_id = 0x001;
 #if !defined(__linux__)
-        filter[0].target_mailbox = 0;   /* messages with CAN ID 0x001 will be received in mailbox 0 */
+        filter[0].target_mailbox = 0;
 #endif
         filter[1].can_mask = 0x7FF;
         filter[1].can_id = 0x002;
 #if !defined(__linux__)
-        filter[1].target_mailbox = 1;   /* messages with CAN ID 0x002 will be received in mailbox 1 */
+        filter[1].target_mailbox = 1;
 #endif
         filter[2].can_mask = 0x7FF;
         filter[2].can_id = 0x003;
 #if !defined(__linux__)
-        filter[2].target_mailbox = 0;   /* messages with CAN ID 0x003 will be received in mailbox 0 */
+        filter[2].target_mailbox = 0;
 #endif
         filter[3].can_mask = 0x7FF;
         filter[3].can_id = 0x004;
 #if !defined(__linux__)
-        filter[3].target_mailbox = 0;   /* this filter won't be applied. Reason is no space found in the first mailbox as it supports only two filters */
+        filter[3].target_mailbox = 1;
 #endif
         for (uint8_t i = 0; i < 4; i++) {
             candev->driver->set_filter(candev, &filter[i]);

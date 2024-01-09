@@ -7,12 +7,11 @@ CAN_DRIVER ?= MCP2515
 
 ifeq ($(CAN_DRIVER), PERIPH_CAN)
   FEATURES_REQUIRED += periph_can
-  ifeq ($(BOARD), same54-xpro)
-    CFLAGS += "-DCANDEV_SAMD5X_DEFAULT_STD_FILTER_NUM=5"
-    CFLAGS += "-DCANDEV_SAMD5X_DEFAULT_EXT_FILTER_NUM=5"
-    # Uncomment to apply type specific filters
-    # USEMODULE += can_filter_type_specific
-  endif
+  # You can increase the number of provided filters using this block. Default number : 3
+  # ifeq ($(BOARD), same54-xpro)
+    # CFLAGS += "-DCANDEV_SAMD5X_DEFAULT_STD_FILTER_NUM=5"
+    # CFLAGS += "-DCANDEV_SAMD5X_DEFAULT_EXT_FILTER_NUM=5"
+  # endif
 else ifeq ($(CAN_DRIVER), MCP2515)
   USEMODULE += mcp2515
   # Uncomment to enable MCP2515 reception filtering
