@@ -55,33 +55,6 @@ extern "C" {
 #define CANDEV_SAMD5X_MAX_TX_BUFFER			32
 #define CANDEV_SAMD5X_MSG_RAM_MAX_SIZE		448
 
-typedef enum {
-    CANDEV_SAMD5X_FILTER_TYPE_RANGE = 0x00,
-    CANDEV_SAMD5X_FILTER_TYPE_DUAL,
-    CANDEV_SAMD5X_FILTER_TYPE_CLASSIC,
-    CANDEV_SAMD5X_FILTER_TYPE_EXT_RANGE
-} candev_samd5x_filter_type_t;
-
-typedef enum {
-    CANDEV_SAMD5X_FILTER_CONF_DISABLE = 0x00,
-    CANDEV_SAMD5X_FILTER_CONF_RX_FIFO_0,
-    CANDEV_SAMD5X_FILTER_CONF_RX_FIFO_1,
-    CANDEV_SAMD5X_FILTER_CONF_RX_REJECT,
-    CANDEV_SAMD5X_FILTER_CONF_RX_PRIO,
-    CANDEV_SAMD5X_FILTER_CONF_RX_PRIO_FIFO_0,
-    CANDEV_SAMD5X_FILTER_CONF_RX_PRIO_FIFO_1,
-    CANDEV_SAMD5X_FILTER_CONF_RX_STRXBUF
-} candev_samd5x_filter_conf_t;
-
-/**
- * @brief Global configuration of the CAN filters
- */
-typedef enum {
-    CAN_ACCEPT_RX_FIFO_0 = 0x00,
-    CAN_ACCEPT_RX_FIFO_1,
-    CAN_REJECT
-} can_non_matching_filter_t;
-
 /**
  * @brief CAN device configuration descriptor
  */
@@ -89,11 +62,7 @@ typedef struct {
     Can *can;                                       /**< CAN device handler */
     gpio_t rx_pin;                                  /**< CAN Rx pin */
     gpio_t tx_pin;                                  /**< CAN Tx pin */
-    bool tdc_ctrl;									/**< Enable/Disable Transceiver Delay Compensation */
-    bool tx_fifo_queue_ctrl;						/**< False to use Tx FIFO operation
-                                                        True to use Tx Queue operation */
-    can_non_matching_filter_t global_filter_cfg;	/**< Configure how to treat the messages that do
-                                                        not match the CAN filters */
+    uint8_t gclk_src;                               /**< GCLK source supplying the CAN controller */
 } can_conf_t;
 #define HAVE_CAN_CONF_T
 
@@ -127,16 +96,12 @@ typedef struct {
     const can_conf_t *conf;
     /** CAN message RAM accessible to the CAN controller */
     msg_ram_conf_t msg_ram_conf;
+    /** Enable/Disable Transceiver Delay Compensation */
+    bool tdc_ctrl;
+    /** False to use Tx FIFO operation, True to use Tx Queue operation */
+    bool tx_fifo_queue_ctrl;
 } can_t;
 #define HAVE_CAN_T
-
-/**
- * @brief   Set the pins of the CAN physical transceiver
- *
- * @param[in] dev   device descriptor
- *
- */
-void candev_samd5x_set_pins(can_t *dev);
 
 /**
  * @brief   Enable/Disable the transmitter delay compensation

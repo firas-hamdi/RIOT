@@ -29,10 +29,22 @@
 
 #define CANDEV_SAMD5X_CLASSIC_FILTER    0x02 /* Value from SAMD5x/E5x Family datasheet, Tables 39-13 and 39-17 */
 
+/**
+ * @brief Specific configuration of the CAN filter
+ */
 enum {
     CANDEV_SAMD5X_FILTER_DISABLE = 0x00,
     CANDEV_SAMD5X_FILTER_RX_FIFO_0,
     CANDEV_SAMD5X_FILTER_RX_FIFO_1
+};
+
+/**
+ * @brief Configuration of how to handles frames not matching the CAN filters
+ */
+enum {
+    CAN_ACCEPT_RX_FIFO_0 = 0x00, /* Direct frames not matching any CAN filters applied to Rx FIFO 0 */
+    CAN_ACCEPT_RX_FIFO_1, /* Direct frames not matching any CAN filters applied to Rx FIFO 1 */
+    CAN_REJECT /* Reject all frames not matching any CAN filters applied */
 };
 
 typedef enum {
@@ -135,10 +147,10 @@ static int _set_mode(Can *can, can_mode_t can_mode)
 static void _setup_clock(can_t *dev)
 {
     if (dev->conf->can == CAN0) {
-        GCLK->PCHCTRL[CAN0_GCLK_ID].reg = GCLK_PCHCTRL_CHEN | GCLK_PCHCTRL_GEN(SAM0_GCLK_PERIPH);
+        GCLK->PCHCTRL[CAN0_GCLK_ID].reg = GCLK_PCHCTRL_CHEN | GCLK_PCHCTRL_GEN(dev->conf->gclk_src);
     }
     else if (dev->conf->can == CAN1) {
-        GCLK->PCHCTRL[CAN1_GCLK_ID].reg = GCLK_PCHCTRL_CHEN | GCLK_PCHCTRL_GEN(SAM0_GCLK_PERIPH);
+        GCLK->PCHCTRL[CAN1_GCLK_ID].reg = GCLK_PCHCTRL_CHEN | GCLK_PCHCTRL_GEN(dev->conf->gclk_src);
     }
     else {
         DEBUG_PUTS("CAN channel not supported");
@@ -183,7 +195,7 @@ static void _set_rx_fifo_1_data_size(can_t *dev, uint8_t size) {
     dev->conf->can->RXESC.reg |= CAN_RXESC_F1DS(size);
 }
 
-void candev_samd5x_set_pins(can_t *dev)
+static void _set_can_pins(can_t *dev)
 {
     assert(dev->conf->tx_pin != GPIO_UNDEF);
     assert(dev->conf->rx_pin != GPIO_UNDEF);
@@ -224,7 +236,7 @@ void candev_samd5x_exit_sleep_mode(candev_t *candev)
 
 void candev_samd5x_tdc_control(can_t *dev)
 {
-    if(dev->conf->tdc_ctrl) {
+    if(dev->tdc_ctrl) {
         DEBUG_PUTS("Enable Transceiver Delay Compensation");
         dev->conf->can->DBTP.reg |= CAN_DBTP_TDC;
     }
@@ -248,11 +260,23 @@ void can_init(can_t *dev, const can_conf_t *conf)
     struct can_bittiming timing = { .bitrate = CANDEV_SAMD5X_DEFAULT_BITRATE,
                                     .sample_point = CANDEV_SAMD5X_DEFAULT_SPT };
 
-    uint32_t clk_freq = sam0_gclk_freq(SAM0_GCLK_PERIPH);
+    uint32_t clk_freq = sam0_gclk_freq(conf->gclk_src);
     can_device_calc_bittiming(clk_freq, &bittiming_const, &timing);
 
     memcpy(&dev->candev.bittiming, &timing, sizeof(timing));
     dev->conf = conf;
+}
+
+static void _dump_msg_ram_section(can_t *dev)
+{
+    puts("start address|\tsize of section");
+    printf("Standard filters|\t0x%02lx|\t%lu\n", (uint32_t)(dev->msg_ram_conf.std_filter), (uint32_t)(ARRAY_SIZE(dev->msg_ram_conf.std_filter)));
+    printf("Extended filters|\t0x%02lx|\t%lu\n", (uint32_t)(dev->msg_ram_conf.ext_filter), (uint32_t)(ARRAY_SIZE(dev->msg_ram_conf.ext_filter)));
+    printf("Rx FIFO 0|\t0x%02lx|\t%lu\n", (uint32_t)(dev->msg_ram_conf.rx_fifo_0), (uint32_t)(ARRAY_SIZE(dev->msg_ram_conf.rx_fifo_0)));
+    printf("Rx FIFO 1|\t0x%02lx|\t%lu\n", (uint32_t)(dev->msg_ram_conf.rx_fifo_1), (uint32_t)(ARRAY_SIZE(dev->msg_ram_conf.rx_fifo_1)));
+    printf("Rx buffer|\t0x%02lx|\t%lu\n", (uint32_t)(dev->msg_ram_conf.rx_buffer), (uint32_t)(ARRAY_SIZE(dev->msg_ram_conf.rx_buffer)));
+    printf("Tx event FIFO|\t0x%02lx|\t%lu\n", (uint32_t)(dev->msg_ram_conf.tx_event_fifo), (uint32_t)(ARRAY_SIZE(dev->msg_ram_conf.tx_event_fifo)));
+    printf("Tx buffer|\t0x%02lx|\t%lu\n", (uint32_t)(dev->msg_ram_conf.tx_fifo_queue), (uint32_t)(ARRAY_SIZE(dev->msg_ram_conf.tx_fifo_queue)));
 }
 
 static int _init(candev_t *candev)
@@ -260,12 +284,12 @@ static int _init(candev_t *candev)
     can_t *dev = container_of(candev, can_t, candev);
     int res = 0;
 
-    sam0_gclk_enable(SAM0_GCLK_PERIPH);
+    sam0_gclk_enable(dev->conf->gclk_src);
 
     _setup_clock(dev);
     _power_on(dev);
 
-    candev_samd5x_set_pins(dev);
+    _set_can_pins(dev);
 
     res = _set_mode(dev->conf->can, MODE_INIT);
 
@@ -284,7 +308,6 @@ static int _init(candev_t *candev)
 
     /* In the vendor file, the data field size in CanMramTxbe is set to 64 bytes although it can be configurable. That's why 64 bytes is used here by default */
     _set_tx_fifo_data_size(dev, CAN_RXESC_F1DS_DATA64_Val);
-
     /* In the vendor file, the data field size in CanMramRxbe is set to 64 bytes although it can be configurable. That's why 64 bytes is used here by default */
     _set_rx_buffer_data_size(dev, CAN_RXESC_RBDS_DATA64_Val);
     /* In the vendor file, the data field size in CanMramRxf0e is set to 64 bytes although it can be configurable. That's why 64 bytes is used here by default */
@@ -292,14 +315,23 @@ static int _init(candev_t *candev)
     /* In the vendor file, the data field size in CanMramRxf1e is set to 64 bytes although it can be configurable. That's why 64 bytes is used here by default */
     _set_rx_fifo_1_data_size(dev, CAN_RXESC_F1DS_DATA64_Val);
 
+    if (IS_ACTIVE(ENABLE_DEBUG)) {
+        _dump_msg_ram_section(dev);
+        printf("Standard ID filter configuration register = 0x%02lx\n", (uint32_t)(dev->conf->can->SIDFC.reg));
+        printf("Extended ID filter configuration register = 0x%02lx\n", (uint32_t)(dev->conf->can->XIDFC.reg));
+        printf("Rx FIFO 0 configuration register = 0x%02lx\n", (uint32_t)(dev->conf->can->RXF0C.reg));
+        printf("Rx FIFO 1 configuration register = 0x%02lx\n", (uint32_t)(dev->conf->can->RXF1C.reg));
+        printf("Standard ID filter configuration register = 0x%02lx\n", (uint32_t)(dev->conf->can->SIDFC.reg));
+    }
     dev->conf->can->CCCR.reg |= CAN_CCCR_DAR;
 
     /* Global configuration of filters */
-    dev->conf->can->GFC.reg = CAN_GFC_ANFE((uint32_t)dev->conf->global_filter_cfg) | CAN_GFC_ANFS((uint32_t)dev->conf->global_filter_cfg);
+    /* Before setting any filters, keep receiving all frames
+        Standard frames are received into Rx FIFO 0
+        Extended frames are received into Rx FIFO 1 */
+    dev->conf->can->GFC.reg = CAN_GFC_ANFE((uint32_t)CAN_ACCEPT_RX_FIFO_1) | CAN_GFC_ANFS((uint32_t)CAN_ACCEPT_RX_FIFO_0);
     /* Reject all remote frames */
     dev->conf->can->GFC.reg |= CAN_GFC_RRFE | CAN_GFC_RRFS;
-
-    /* Control FIFO/queue op */
 
     /* Enable the peripheral's interrupt */
     if (dev->conf->can == CAN0) {
@@ -441,6 +473,11 @@ static int _set_filter(candev_t *candev, const struct can_filter *filter)
         dev->msg_ram_conf.ext_filter[idx].XIDFE_1.bit.EFT = CANDEV_SAMD5X_CLASSIC_FILTER;
         dev->msg_ram_conf.ext_filter[idx].XIDFE_0.bit.EFID1 = filter->can_id;
         dev->msg_ram_conf.ext_filter[idx].XIDFE_1.bit.EFID2 = filter->can_mask & CAN_EFF_MASK;
+        printf("Extended message ID filter element N°%d = 0x%02lx\n", idx, (uint32_t)(dev->msg_ram_conf.std_filter[idx].SIDFE_0.reg));
+        _set_mode(dev->conf->can, MODE_INIT);
+        /* Reject all extended frames that are not matching the filters applied */
+        dev->conf->can->GFC.reg |= CAN_GFC_ANFE((uint32_t)CAN_REJECT);
+        _exit_init_mode(dev->conf->can);
     }
     else {
         DEBUG_PUTS("Standard filter to add in the standard filter section of the message RAM");
@@ -470,6 +507,11 @@ static int _set_filter(candev_t *candev, const struct can_filter *filter)
         dev->msg_ram_conf.std_filter[idx].SIDFE_0.bit.SFT = CANDEV_SAMD5X_CLASSIC_FILTER;
         dev->msg_ram_conf.std_filter[idx].SIDFE_0.bit.SFID1 = filter->can_id & CAN_SFF_MASK;
         dev->msg_ram_conf.std_filter[idx].SIDFE_0.bit.SFID2 = filter->can_mask & CAN_SFF_MASK;
+        printf("Standard message ID filter element N°%d = 0x%02lx\n", idx, (uint32_t)(dev->msg_ram_conf.std_filter[idx].SIDFE_0.reg));
+        _set_mode(dev->conf->can, MODE_INIT);
+        /* Reject all standard frames that are not matching the filters applied */
+        dev->conf->can->GFC.reg |= CAN_GFC_ANFS((uint32_t)CAN_REJECT);
+        _exit_init_mode(dev->conf->can);
     }
 
     return idx;
@@ -517,11 +559,7 @@ static void _isr(candev_t *candev)
     can_t *dev = container_of(candev, can_t, candev);
 
     uint32_t irq_reg = dev->conf->can->IR.reg;
-    if (irq_reg & CAN_IR_TSW) {
-        DEBUG_PUTS("Timestamp wraparound interrupt");
-        /* Clear the interrupt source flag */
-        dev->conf->can->IR.reg |= CAN_IR_TSW;
-    }
+    DEBUG("isr: IR reg = 0x%02lx\n", irq_reg);
 
     if (irq_reg & CAN_IR_RF0N) {
         DEBUG_PUTS("New message in Rx FIFO 0");
@@ -599,7 +637,6 @@ void ISR_CAN1(void)
     if (_can->candev.event_callback) {
         _can->candev.event_callback(&(_can->candev), CANDEV_EVENT_ISR, NULL);
     }
-
 }
 #endif
 

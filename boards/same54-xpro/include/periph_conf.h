@@ -116,9 +116,7 @@ static const can_conf_t candev_conf[] = {
         .can = CAN1,
         .rx_pin = GPIO_PIN(PB, 13),
         .tx_pin = GPIO_PIN(PB, 12),
-        .tdc_ctrl = false,
-        .tx_fifo_queue_ctrl = false,
-        .global_filter_cfg = CAN_REJECT,
+        .gclk_src = SAM0_GCLK_PERIPH,
     }
 };
 
