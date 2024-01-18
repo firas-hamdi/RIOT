@@ -132,7 +132,78 @@ static int _receive(int argc, char **argv)
     return 0;
 }
 
+static int _set_bit_rate(int argc, char **argv)
+{
+    uint32_t bitrate = 250000;
+    uint32_t sample_point = 875;
+    int res = 0;
+
+    if (argc == 2) {
+        bitrate = (uint32_t)atoi(argv[1]);
+    }
+    if (argc == 3) {
+        bitrate = (uint32_t)atoi(argv[1]);
+        sample_point = (uint32_t)atoi(argv[2]);
+    }
+
+    struct can_bittiming bit_timing = {
+        .bitrate = bitrate,
+        .sample_point = sample_point,
+    };
+
+    res = candev->driver->set(candev, CANOPT_BITTIMING, &bit_timing, sizeof(bit_timing));
+
+    return res;
+}
+
+static int _set_can_filter(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    int res = 0;
+
+    struct can_filter filter = {
+        .can_mask = 0x7FF,
+        .can_id = 0x1aa,
+#if !defined(__linux__)
+        .target_mailbox = 1,
+#endif
+    };
+
+    res = candev->driver->set(candev, CANOPT_RX_FILTERS, &filter, sizeof(struct can_filter));
+
+    return res;
+}
+
+static int _power_off(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    int res = 0;
+
+    canopt_state_t state = CANOPT_STATE_OFF;
+    res = candev->driver->set(candev, CANOPT_STATE, &state, sizeof(canopt_state_t));
+
+    return res;
+}
+
+static int _power_on(int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    int res = 0;
+
+    canopt_state_t state = CANOPT_STATE_ON;
+    res = candev->driver->set(candev, CANOPT_STATE, &state, sizeof(canopt_state_t));
+
+    return res;
+}
+
 static const shell_command_t shell_commands[] = {
+    { "on", "Turn on the CAN controller", _power_on},
+    { "off", "Turn off the CAN controller", _power_off},
+    { "set_filter", "set CAN filters", _set_can_filter},
+    { "set_bit_rate", "set CAN bit rate", _set_bit_rate},
     { "send", "send some data", _send },
     { "receive", "receive some data", _receive },
     { NULL, NULL, NULL }
