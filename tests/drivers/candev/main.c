@@ -162,20 +162,12 @@ static void _can_event_callback(candev_t *dev, candev_event_t event, void *arg)
 
         frame = (struct can_frame *)arg;
 
-        DEBUG("            id: %" PRIx32 " dlc: %" PRIx8 " data: ", frame->can_id & 0x1FFFFFFF,
+        DEBUG("            id: %" PRIx32 " dlc: %u data: ", frame->can_id & 0x1FFFFFFF,
               frame->can_dlc);
         for (uint8_t i = 0; i < frame->can_dlc; i++) {
             DEBUG("0x%X ", frame->data[i]);
         }
         DEBUG_PUTS("");
-        struct can_frame can_answer = {
-            .can_id = 0x81234567,
-            .can_dlc = 1,
-            .data = {
-                0xAA
-            }
-        };
-        candev->driver->send(candev, &can_answer);
 
         /* Store in buffer until user requests the data */
         isrpipe_write(&rxbuf, (uint8_t *)&(frame->can_id), sizeof(frame->can_id));
