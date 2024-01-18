@@ -63,6 +63,7 @@ static int _init(candev_t *candev);
 static int _send(candev_t *candev, const struct can_frame *frame);
 static int _set_filter(candev_t *candev, const struct can_filter *filter);
 static int _remove_filter(candev_t *candev, const struct can_filter *filter);
+static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len);
 static void _isr(candev_t *candev);
 
 static int _set_mode(Can *can, can_mode_t mode);
@@ -72,6 +73,7 @@ static const candev_driver_t candev_samd5x_driver = {
     .send = _send,
     .set_filter = _set_filter,
     .remove_filter = _remove_filter,
+    .set = _set,
     .isr = _isr,
 };
 
@@ -95,6 +97,24 @@ static int _power_on(can_t *dev)
     else if (dev->conf->can == CAN1) {
         DEBUG_PUTS("CAN1 controller is used");
         MCLK->AHBMASK.reg |= MCLK_AHBMASK_CAN1;
+    }
+    else {
+        DEBUG_PUTS("Unsupported CAN channel");
+        return -1;
+    }
+
+    return 0;
+}
+
+static int _power_off(can_t *dev)
+{
+    if (dev->conf->can == CAN0) {
+        DEBUG_PUTS("CAN0 controller is used");
+        MCLK->AHBMASK.reg &= ~MCLK_AHBMASK_CAN0;
+    }
+    else if (dev->conf->can == CAN1) {
+        DEBUG_PUTS("CAN1 controller is used");
+        MCLK->AHBMASK.reg &= ~MCLK_AHBMASK_CAN1;
     }
     else {
         DEBUG_PUTS("Unsupported CAN channel");
@@ -292,6 +312,9 @@ static int _init(candev_t *candev)
     _set_can_pins(dev);
 
     res = _set_mode(dev->conf->can, MODE_INIT);
+    if (res != 0) {
+        return -1;
+    }
 
     _set_bit_timing(dev);
 
@@ -325,11 +348,6 @@ static int _init(candev_t *candev)
     }
     dev->conf->can->CCCR.reg |= CAN_CCCR_DAR;
 
-    /* Global configuration of filters */
-    /* Before setting any filters, keep receiving all frames
-        Standard frames are received into Rx FIFO 0
-        Extended frames are received into Rx FIFO 1 */
-    dev->conf->can->GFC.reg = CAN_GFC_ANFE((uint32_t)CAN_ACCEPT_RX_FIFO_1) | CAN_GFC_ANFS((uint32_t)CAN_ACCEPT_RX_FIFO_0);
     /* Reject all remote frames */
     dev->conf->can->GFC.reg |= CAN_GFC_RRFE | CAN_GFC_RRFS;
 
@@ -552,6 +570,78 @@ static int _remove_filter(candev_t *candev, const struct can_filter *filter)
     }
 
     return idx;
+}
+
+static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len)
+{
+    can_t *dev = container_of(candev, can_t, candev);
+    int res = 0;
+
+    switch (opt) {
+        case CANOPT_BITTIMING:
+            if (value_len < sizeof(struct can_bittiming)) {
+                return -1;
+            }
+            else {
+                memcpy(&candev->bittiming, value, sizeof(struct can_bittiming));
+                uint32_t clk_freq = sam0_gclk_freq(dev->conf->gclk_src);
+                can_device_calc_bittiming(clk_freq, &bittiming_const, &candev->bittiming);
+                res = _init(candev);
+                if (res == 0) {
+                    res = sizeof(candev->bittiming);
+                }
+                else {
+                    return -1;
+                }
+            }
+            break;
+        case CANOPT_RX_FILTERS:
+            if (value_len < sizeof(struct can_filter)) {
+                return -1;
+            }
+            else {
+                res = _set_filter(candev, value);
+                if (res >= 0) {
+                    res = sizeof(struct can_filter);
+                }
+                else {
+                    return -1;
+                }
+            }
+            break;
+        case CANOPT_STATE:
+            if (value_len < sizeof(canopt_state_t)) {
+                return -1;
+            }
+            else {
+                switch(*((canopt_state_t *)value)) {
+                    case CANOPT_STATE_OFF:
+                        res = _power_off(dev);
+                        if (res == 0) {
+                            res = sizeof(canopt_state_t);
+                        }
+                        else {
+                            return -1;
+                        }
+                        break;
+                    case CANOPT_STATE_ON:
+                        res = _power_on(dev);
+                        if (res == 0) {
+                            res = sizeof(canopt_state_t);
+                        }
+                        else {
+                            return -1;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        default:
+            break;
+    }
+
+    return res;
 }
 
 static void _isr(candev_t *candev)
