@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#if defined(CAN_INST_NUM)
 #include "can/candev.h"
 
 #ifndef CANDEV_SAMD5X_DEFAULT_BITRATE
@@ -135,4 +136,5 @@ void candev_samd5x_enter_sleep_mode(candev_t *candev);
  */
 void candev_samd5x_exit_sleep_mode(candev_t *candev);
 
+#endif /* CAN_INST_NUM */
 #endif /* CANDEV_SAMD5X_H */
