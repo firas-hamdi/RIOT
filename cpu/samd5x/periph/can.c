@@ -27,7 +27,8 @@
 #define ENABLE_DEBUG 0
 #include "debug.h"
 
-#define CANDEV_SAMD5X_CLASSIC_FILTER    0x02 /* Value from SAMD5x/E5x Family datasheet, Tables 39-13 and 39-17 */
+#define CANDEV_SAMD5X_CLASSIC_FILTER 0x02 /* Value from SAMD5x/E5x Family datasheet, Tables 39-13 and 39-17 */
+#define CANDEV_SAMD5X_INTERNAL_LOOPBACK 0    /* Set to 1 to access the internal loopback mode. Check SAMD5x/E5x Family datasheet, Figure 39-4 */
 
 /**
  * @brief Specific configuration of the CAN filter
@@ -154,6 +155,9 @@ static int _set_mode(Can *can, can_mode_t can_mode)
             can->CCCR.reg |= CAN_CCCR_CCE;
             can->CCCR.reg |= CAN_CCCR_TEST;
             can->TEST.reg |= CAN_TEST_LBCK;
+#if IS_ACTIVE(CANDEV_SAMD5X_INTERNAL_LOOPBACK)
+            can->CCCR.reg |= CAN_CCCR_MON;
+#endif
             _exit_init_mode(can);
             break;
         default:
@@ -491,7 +495,7 @@ static int _set_filter(candev_t *candev, const struct can_filter *filter)
         dev->msg_ram_conf.ext_filter[idx].XIDFE_1.bit.EFT = CANDEV_SAMD5X_CLASSIC_FILTER;
         dev->msg_ram_conf.ext_filter[idx].XIDFE_0.bit.EFID1 = filter->can_id;
         dev->msg_ram_conf.ext_filter[idx].XIDFE_1.bit.EFID2 = filter->can_mask & CAN_EFF_MASK;
-        printf("Extended message ID filter element N°%d = 0x%02lx\n", idx, (uint32_t)(dev->msg_ram_conf.std_filter[idx].SIDFE_0.reg));
+        DEBUG("Extended message ID filter element N°%d = 0x%02lx\n", idx, (uint32_t)(dev->msg_ram_conf.std_filter[idx].SIDFE_0.reg));
         _set_mode(dev->conf->can, MODE_INIT);
         /* Reject all extended frames that are not matching the filters applied */
         dev->conf->can->GFC.reg |= CAN_GFC_ANFE((uint32_t)CAN_REJECT);
@@ -525,7 +529,7 @@ static int _set_filter(candev_t *candev, const struct can_filter *filter)
         dev->msg_ram_conf.std_filter[idx].SIDFE_0.bit.SFT = CANDEV_SAMD5X_CLASSIC_FILTER;
         dev->msg_ram_conf.std_filter[idx].SIDFE_0.bit.SFID1 = filter->can_id & CAN_SFF_MASK;
         dev->msg_ram_conf.std_filter[idx].SIDFE_0.bit.SFID2 = filter->can_mask & CAN_SFF_MASK;
-        printf("Standard message ID filter element N°%d = 0x%02lx\n", idx, (uint32_t)(dev->msg_ram_conf.std_filter[idx].SIDFE_0.reg));
+        DEBUG("Standard message ID filter element N°%d = 0x%02lx\n", idx, (uint32_t)(dev->msg_ram_conf.std_filter[idx].SIDFE_0.reg));
         _set_mode(dev->conf->can, MODE_INIT);
         /* Reject all standard frames that are not matching the filters applied */
         dev->conf->can->GFC.reg |= CAN_GFC_ANFS((uint32_t)CAN_REJECT);
@@ -626,6 +630,15 @@ static int _set(candev_t *candev, canopt_t opt, void *value, size_t value_len)
                         break;
                     case CANOPT_STATE_ON:
                         res = _power_on(dev);
+                        if (res == 0) {
+                            res = sizeof(canopt_state_t);
+                        }
+                        else {
+                            return -1;
+                        }
+                        break;
+                    case CANOPT_STATE_LOOPBACK:
+                        res = _set_mode(dev->conf->can, MODE_TEST);
                         if (res == 0) {
                             res = sizeof(canopt_state_t);
                         }
