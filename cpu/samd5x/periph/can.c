@@ -101,7 +101,7 @@ static int _power_on(can_t *dev)
     }
     else {
         DEBUG_PUTS("Unsupported CAN channel");
-        return -1;
+        assert(0);
     }
 
     return 0;
@@ -119,7 +119,7 @@ static int _power_off(can_t *dev)
     }
     else {
         DEBUG_PUTS("Unsupported CAN channel");
-        return -1;
+        assert(0);
     }
 
     return 0;
@@ -152,6 +152,7 @@ static int _set_mode(Can *can, can_mode_t can_mode)
         case MODE_TEST:
             DEBUG_PUTS("test mode");
             _enter_init_mode(can);
+            /* CCCR.TEST and CCCR.MON can be set only when CCCR.INIT and CCCR.CCE are set */
             can->CCCR.reg |= CAN_CCCR_CCE;
             can->CCCR.reg |= CAN_CCCR_TEST;
             can->TEST.reg |= CAN_TEST_LBCK;
@@ -350,6 +351,8 @@ static int _init(candev_t *candev)
         printf("Rx FIFO 1 configuration register = 0x%02lx\n", (uint32_t)(dev->conf->can->RXF1C.reg));
         printf("Standard ID filter configuration register = 0x%02lx\n", (uint32_t)(dev->conf->can->SIDFC.reg));
     }
+    /* Disable automatic retransmission by default */
+    /* This can be added as a configuration parameter for the CAN controller */
     dev->conf->can->CCCR.reg |= CAN_CCCR_DAR;
 
     /* Reject all remote frames */
@@ -363,7 +366,9 @@ static int _init(candev_t *candev)
         NVIC_EnableIRQ(CAN1_IRQn);
     }
 
+    /* Enable reception interrupts: reception on FIFO0 and FIFO1 */
     dev->conf->can->IE.reg |= CAN_IE_RF0NE | CAN_IE_RF1NE;
+    /* Enable transmission events interrupts */
     dev->conf->can->IE.reg |= CAN_IE_TEFNE;
     /* Enable the interrupt lines */
     dev->conf->can->ILE.reg = CAN_ILE_EINT0 | CAN_ILE_EINT1;
@@ -429,7 +434,9 @@ static int _send(candev_t *candev, const struct can_frame *frame)
 
 static bool _find_filter(can_t *can, const struct can_filter *filter, bool is_std_filter, int16_t *idx)
 {
+    /* Standard filter */
     if (is_std_filter) {
+        /* Search for the standard filter in the CAN controller message RAM */
         for (uint8_t i = 0; i < ARRAY_SIZE(can->msg_ram_conf.std_filter); i++) {
             if (((filter->can_id & CAN_SFF_MASK) == can->msg_ram_conf.std_filter[i].SIDFE_0.bit.SFID1)) {
                 *idx = i;
@@ -437,7 +444,9 @@ static bool _find_filter(can_t *can, const struct can_filter *filter, bool is_st
             }
         }
     }
+    /* Extended filter */
     else {
+        /* Search for the extended filter in the CAN controller message RAM */
         for (uint8_t i = 0; i < ARRAY_SIZE(can->msg_ram_conf.ext_filter); i++) {
             if (((filter->can_id & CAN_EFF_MASK) == can->msg_ram_conf.ext_filter[i].XIDFE_0.bit.EFID1)) {
                 *idx = i;
