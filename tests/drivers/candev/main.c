@@ -33,11 +33,9 @@
 
 #include "periph/can.h"
 #include "can_params.h"
-#if defined(BOARD_SAME54_XPRO)
 #include "board.h"
 #include "periph_conf.h"
 #include "periph/gpio.h"
-#endif
 
 static can_t periph_dev;
 
@@ -275,7 +273,8 @@ int main(void)
     can_init(&periph_dev, &(candev_conf[0]));
     candev = &(periph_dev.candev);
 #if defined(BOARD_SAME54_XPRO)
-    gpio_init(AT6561_STBY_PIN, AT6561_STBY_MODE);
+    gpio_init(AT6561_STBY_PIN, GPIO_OUT);
+    gpio_clear(AT6561_STBY_PIN);
 #endif
 #elif defined(MODULE_MCP2515)
     puts("Initializing MCP2515");
