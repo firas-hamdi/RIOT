@@ -80,7 +80,6 @@ extern "C" {
  * @{
  */
 #define AT6561_STBY_PIN            GPIO_PIN(PC, 13)
-#define AT6561_STBY_MODE           GPIO_OUT
 /** @} */
 
 /**
