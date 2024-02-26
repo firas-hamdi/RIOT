@@ -8456,3 +8456,4 @@ warning: Member SCSI_SENSE_KEY_VENDOR_SPECIFIC (macro definition) of file scsi.h
 warning: Member SCSI_SENSE_KEY_ABORTED_COMMAND (macro definition) of file scsi.h is not documented.
 warning: Member SCSI_SENSE_KEY_VOLUME_OVERFLOW (macro definition) of file scsi.h is not documented.
 warning: Member SCSI_SENSE_KEY_MISCOMPARE (macro definition) of file scsi.h is not documented.
+Error: Member AT6561_STBY_PIN (macro definition) of file board.h is not documented.
