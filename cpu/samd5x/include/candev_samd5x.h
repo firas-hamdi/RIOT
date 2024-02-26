@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2024 ML!PA Consulting GmbH
+ *
+ * This file is subject to the terms and conditions of the GNU Lesser
+ * General Public License v2.1. See the file LICENSE in the top level
+ * directory for more details.
+ */
+
+/**
+ * @ingroup         cpu_samd5x
+ * @brief           CPU specific definitions for CAN controllers
+ * @{
+ *
+ * @file
+ * @brief           SAMD5x CAN controller (M_CAN Bosch) driver
+ *
+ * @author          Firas Hamdi <firas.hamdi@ml-pa.com>
+ */
+
 #ifndef CANDEV_SAMD5X_H
 #define CANDEV_SAMD5X_H
 
@@ -15,7 +34,7 @@ extern "C" {
 
 #ifndef CANDEV_SAMD5X_DEFAULT_SPT
 /** Default sampling-point */
-#define CANDEV_SAMD5X_DEFAULT_SPT     875
+#define CANDEV_SAMD5X_DEFAULT_SPT 875
 #endif
 
 #ifndef CANDEV_SAMD5X_DEFAULT_STD_FILTER_NUM
@@ -23,38 +42,38 @@ extern "C" {
 #endif
 
 #ifndef CANDEV_SAMD5X_DEFAULT_EXT_FILTER_NUM
-#define CANDEV_SAMD5X_DEFAULT_EXT_FILTER_NUM	3
+#define CANDEV_SAMD5X_DEFAULT_EXT_FILTER_NUM 3
 #endif
 
 #ifndef CANDEV_SAMD5X_DEFAULT_RX_FIFO_0_ELTS_NUM
-#define CANDEV_SAMD5X_DEFAULT_RX_FIFO_0_ELTS_NUM	32
+#define CANDEV_SAMD5X_DEFAULT_RX_FIFO_0_ELTS_NUM 32
 #endif
 
 #ifndef CANDEV_SAMD5X_DEFAULT_RX_FIFO_1_ELTS_NUM
-#define CANDEV_SAMD5X_DEFAULT_RX_FIFO_1_ELTS_NUM	32
+#define CANDEV_SAMD5X_DEFAULT_RX_FIFO_1_ELTS_NUM 32
 #endif
 
 #ifndef CANDEV_SAMD5X_DEFAULT_TX_EVT_FIFO_ELTS_NUM
-#define CANDEV_SAMD5X_DEFAULT_TX_EVT_FIFO_ELTS_NUM	16
+#define CANDEV_SAMD5X_DEFAULT_TX_EVT_FIFO_ELTS_NUM 16
 #endif
 
 #ifndef CANDEV_SAMD5X_DEFAULT_TX_BUFFER_NUM
-#define CANDEV_SAMD5X_DEFAULT_TX_BUFFER_NUM			16
+#define CANDEV_SAMD5X_DEFAULT_TX_BUFFER_NUM 16
 #endif
 
 #ifndef CANDEV_SAMD5X_DEFAULT_TX_BUFFER_FIFO_QUEUE_NUM
-#define CANDEV_SAMD5X_DEFAULT_TX_BUFFER_FIFO_QUEUE_NUM		16
+#define CANDEV_SAMD5X_DEFAULT_TX_BUFFER_FIFO_QUEUE_NUM 16
 #endif
 
 /* unit: elements */
-#define CANDEV_SAMD5X_MAX_STD_FILTER		128
-#define CANDEV_SAMD5X_MAX_EXT_FILTER		64
-#define CANDEV_SAMD5X_MAX_RX_FIFO_0_ELTS	64
-#define CANDEV_SAMD5X_MAX_RX_FIFO_1_ELTS	64
-#define CANDEV_SAMD5X_MAX_RX_BUFFER			64
-#define CANDEV_SAMD5X_MAX_TX_EVT_FIFO_ELTS	32
-#define CANDEV_SAMD5X_MAX_TX_BUFFER			32
-#define CANDEV_SAMD5X_MSG_RAM_MAX_SIZE		448
+#define CANDEV_SAMD5X_MAX_STD_FILTER 128
+#define CANDEV_SAMD5X_MAX_EXT_FILTER 64
+#define CANDEV_SAMD5X_MAX_RX_FIFO_0_ELTS 64
+#define CANDEV_SAMD5X_MAX_RX_FIFO_1_ELTS 64
+#define CANDEV_SAMD5X_MAX_RX_BUFFER 64
+#define CANDEV_SAMD5X_MAX_TX_EVT_FIFO_ELTS 32
+#define CANDEV_SAMD5X_MAX_TX_BUFFER 32
+#define CANDEV_SAMD5X_MSG_RAM_MAX_SIZE 448
 
 /**
  * @brief CAN device configuration descriptor

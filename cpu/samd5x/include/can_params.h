@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2024 ML!PA Consulting GmbH
+ *
+ * This file is subject to the terms and conditions of the GNU Lesser
+ * General Public License v2.1. See the file LICENSE in the top level
+ * directory for more details.
+ */
+
+/**
+ * @ingroup         cpu_samd5x
+ * @brief           CPU specific definitions for CAN controllers
+ * @{
+ *
+ * @file
+ * @brief           SAMD5x CAN controller (M_CAN Bosch) default device parameters
+ *
+ * @author          Firas Hamdi <firas.hamdi@ml-pa.com>
+ */
+
 #ifndef CAN_PARAMS_H
 #define CAN_PARAMS_H
 
